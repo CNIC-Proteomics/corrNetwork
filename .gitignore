@@ -1,5 +1,7 @@
+.vscode
 __pycache__
 lib/__pycache__
 tests/__pycache__
 *.pyc
 data/*
+tests/test*-out_*
