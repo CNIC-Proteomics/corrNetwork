@@ -12,25 +12,26 @@ class corrNetworkTests(unittest.TestCase):
     '''
     def setUp(self):
         self.indir = os.path.dirname( __file__ ) +'/tests'
-        self.infile = self.indir +'/test1-in.xlsx'        
+        self.fname = 'test2'
+        self.infile = self.indir +'/'+ self.fname +'-in.xlsx'        
         self.widget = calc.calculate(self.infile)
 
     def testCorrelationPearson(self):
         method = 'pearson'
         self.widget.correlation(method)
-        outfile = self.indir +'/test1-out_'+method+'.csv'
+        outfile = self.indir +'/'+self.fname+'-out_'+method+'.csv'
         self.widget.to_csv(outfile)        
 
     def testCorrelationKendall(self):
         method = 'kendall'
         self.widget.correlation(method)
-        outfile = self.indir +'/test1-out_'+method+'.csv'
+        outfile = self.indir +'/'+self.fname+'-out_'+method+'.csv'
         self.widget.to_csv(outfile)
 
     def testCorrelationSpearman(self):
         method = 'spearman'
         self.widget.correlation(method)
-        outfile = self.indir +'/test1-out_'+method+'.csv'
+        outfile = self.indir +'/'+self.fname+'-out_'+method+'.csv'
         self.widget.to_csv(outfile)
 
 def main():

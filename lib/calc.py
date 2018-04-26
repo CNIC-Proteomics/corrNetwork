@@ -13,7 +13,7 @@ class calculate:
     def __init__(self, i, m=None):
         self.infile = i
         self.df = pandas.read_excel(self.infile, na_values=['NA']).set_index('Protein')
-        self.df = self.df.drop( ['Accession'], axis=1) # delete unnecessary columns
+        # self.df = self.df.drop( ['Accession'], axis=1) # delete unnecessary columns
         # self.df_full_count = self.df.apply(lambda x: x.count(), axis=1)
         if m is None:
             self.method = 'pearson'
