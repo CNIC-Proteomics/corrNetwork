@@ -22,7 +22,5 @@ python correlation_network.py -i data/PESA_V1_Zq.xlsx -o data/PESA_V1.corr_net.s
 or
 
 ```bash
-Note: under construction
 corrNetwork.bat ...
-
 ```
