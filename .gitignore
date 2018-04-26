@@ -4,4 +4,4 @@ lib/__pycache__
 tests/__pycache__
 *.pyc
 data/*
-tests/test*-out_*
+tests/test*-out*
