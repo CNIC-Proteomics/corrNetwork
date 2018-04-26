@@ -1,8 +1,14 @@
 #!/usr/bin/python
 
-import argparse, logging, os
+import os
+import sys
+import argparse
+import logging
 
-from lib import calc
+# import local modules
+sys.path.append( os.path.abspath(os.path.dirname(__file__)) )
+# import calc # for unlocated virtual environment
+from lib import calc # for local environment
 
 __author__ = 'jmrodriguezc'
 
