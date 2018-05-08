@@ -3,6 +3,9 @@ import pandas
 import itertools
 import re
 
+import queue
+import threading
+
 __author__ = 'jmrodriguezc'
 
 
@@ -10,9 +13,13 @@ class calculate:
     '''
     Extract the correlation values
     '''
+    NUM_THREADS = 500
+
     def __init__(self, i, m=None):
         self.infile = i
-        self.df = pandas.read_excel(self.infile, na_values=['NA']).set_index('Protein')
+        self.df = pandas.read_excel(self.infile, na_values=['NA'])
+        c = str(self.df.columns[0])
+        self.df = self.df.set_index(c) # set index with the first column
         # self.df = self.df.drop( ['Accession'], axis=1) # delete unnecessary columns
         # self.df_full_count = self.df.apply(lambda x: x.count(), axis=1)
         if m is None:
@@ -42,20 +49,38 @@ class calculate:
                 id = desc
             return id
 
-    def correlation(self, method=None):
-        '''
-        Calculate the correlation
-        '''
-        # get method if it exists: Priority
-        if method is not None:
-            self.method = method
-        # from the list of proteins (index) we get all combinatios for pairs
-        # create a dataframe with the correlation for each pairwise
-        idx = self.df.index.tolist()
-        for combo in itertools.combinations(idx, 2):
-            # get the index name
-            qi = combo[0]
-            qj = combo[1]
+    # def correlation(self, method=None):
+    #     '''
+    #     Calculate the correlation
+    #     '''
+    #     # get method if it exists: Priority
+    #     if method is not None:
+    #         self.method = method
+    #     # from the list of proteins (index) we get all combinatios for pairs
+    #     # create a dataframe with the correlation for each pairwise
+    #     idx = self.df.index.tolist()
+    #     for combo in itertools.combinations(idx, 2):
+    #         # get the index name
+    #         qi = combo[0]
+    #         qj = combo[1]
+    #         # create the correlation
+    #         dfi = self.df.loc[qi,:]
+    #         dfj = self.df.loc[qj,:]
+    #         corr = dfi.corr(dfj, method=self.method)
+    #         # count hte number of cases when both series are empty
+    #         # joining the df and deleting when all columns are empty
+    #         n = pandas.concat( [dfi, dfj], axis=1)
+    #         n = n.dropna( how='all')
+    #         nij = len( n.index )
+    #         # extract the identifiers by protein gene|protein
+    #         gi = self._get_id(qi)
+    #         gj = self._get_id(qj)
+    #         # create dataframe with the pairwise
+    #         p = pandas.DataFrame([[gi,gj,corr,nij]], columns=self.out_header)
+    #         # append to global dataframe
+    #         self.df_corr = self.df_corr.append(p, ignore_index=True)
+
+    def _append_correlation(self, qi, qj, lock):       
             # create the correlation
             dfi = self.df.loc[qi,:]
             dfj = self.df.loc[qj,:]
@@ -70,9 +95,48 @@ class calculate:
             gj = self._get_id(qj)
             # create dataframe with the pairwise
             p = pandas.DataFrame([[gi,gj,corr,nij]], columns=self.out_header)
-            # append to global dataframe
+            # append to global dataframe (lock in case)
+            lock.acquire()
             self.df_corr = self.df_corr.append(p, ignore_index=True)
-        
+            lock.release()
+
+    def do_stuff(self, q, l):
+        while True:
+            (qi,qj) = q.get()
+            if qi is None or qj is None:
+                break
+            self._append_correlation(qi, qj, l)
+            q.task_done()
+
+    def correlation(self, method=None):
+        '''
+        Calculate the correlation
+        '''
+        # get method if it exists: Priority
+        if method is not None:
+            self.method = method
+        # creating a lock
+        lock = threading.Lock()
+        # define a q
+        q = queue.Queue()
+        # create threads
+        for i in range(self.NUM_THREADS):
+            worker = threading.Thread(target=self.do_stuff, args=(q,lock,))
+            worker.setDaemon(True)
+            worker.start()
+        # from the list of proteins (index) we get all combinatios for pairs appending into the queue
+        idx = self.df.index.tolist()
+        for combo in itertools.combinations(idx, 2):
+            qi = combo[0]
+            qj = combo[1]
+            q.put( (qi,qj) )
+        # block until all tasks are done
+        q.join()
+        # sort dataframe by correlation score (Third column)
+        c = str(self.df_corr.columns[2])        
+        self.df_corr = self.df_corr.sort_values(by=[c], ascending=False)
+
+
     def to_csv(self,outfile):
         '''
         Print to CSV
