@@ -21,21 +21,28 @@ class calculate:
     Extract the correlation values
     '''
     # NUM_CPUs = multiprocessing.cpu_count()
-    NUM_CPUs = 25
+    NUM_CPUs = 20
 
-    def __init__(self, i, m=None):
+    def __init__(self, i, m=None, uniq_geneId=False, transpose=False, groups=None):
         # handle I/O files
         self.infile = i
         # extract input data ( as dataframe )
         # set index with the first column
-        self.df = pandas.read_excel(self.infile, na_values=['NA'])
+        self.df = pandas.read_excel(self.infile, na_values=['NA'])        
         c = str(self.df.columns[0])
         self.df = self.df.set_index(c)
+        # transpose if apply
+        if transpose:
+            self.df = self.df.transpose()
         # get method
         if m is None:
             self.method = 'pearson'
         else:
             self.method = m
+        # return or not the Unique Gene Id
+        self.uniqGeneId = uniq_geneId
+        # group the list of combinations or not
+        self.groups = groups
         # ouput config
         self.out_header = ['Qi','Qj','Rij','Nij']
         self.df_corr = pandas.DataFrame()
@@ -44,21 +51,24 @@ class calculate:
         '''
         Extract the id from the description
         '''
-        if desc.startswith("RF_"):
-            return desc
-        else:
-            gid = 'UNKNOWN'
-            if re.search(r'GN=(\w*)', desc, re.I | re.M):        
-                g_id = re.search(r'GN=(\w*)', desc, re.I | re.M)
-                gid = str(g_id[1])
-            # the protein_id is mandatory
-            p_id = desc.split("|")
-            if p_id is not None and len(p_id) >= 2:
-                pid = str(p_id[1])
-                id = gid +"|"+ pid
+        if self.uniqGeneId:
+            if desc.startswith(">"):
+                gid = 'UNKNOWN'
+                if re.search(r'GN=(\w*)', desc, re.I | re.M):        
+                    g_id = re.search(r'GN=(\w*)', desc, re.I | re.M)
+                    gid = str(g_id[1])
+                # the protein_id is mandatory
+                p_id = desc.split("|")
+                if p_id is not None and len(p_id) >= 2:
+                    pid = str(p_id[1])
+                    id = gid +"|"+ pid
+                else:
+                    id = desc
             else:
                 id = desc
-            return id
+        else:
+            id = desc
+        return id
 
     def _append_correlation(self, shared_lst, combos):
         for combo in combos:        
@@ -87,16 +97,26 @@ class calculate:
         # get method if it exists: Priority
         if method is not None:
             self.method = method
+        # from 'tag' of groups, we create a list of groups and compute the cartesian product
+        combos = []
+        if self.groups:
+            idx = self.df.index.tolist()
+            groups = []
+            for group in self.groups.split(","):
+                g = [x for x in idx if x.find(group) != -1]
+                groups.append(g)
+            combos = list(itertools.product(*groups))
+        # from the list of proteins (index) we get all combinatios for pairs appending into the queue
+        else:
+            idx = self.df.index.tolist()
+            combos = list( itertools.combinations(idx, 2) )
+        combos_len = len( combos )
+        logging.info("number of combinations "+str(combos_len) )
         # Shared list (Proxy manager)
         mgr = multiprocessing.Manager()
         shared_lst = mgr.list()
         # create multiprocessing Pool
         pool = multiprocessing.Pool(processes=self.NUM_CPUs)
-        # from the list of proteins (index) we get all combinatios for pairs appending into the queue
-        idx = self.df.index.tolist()
-        combos = list( itertools.combinations(idx, 2) )
-        combos_len = len( combos )
-        logging.info("number of combinations "+str(combos_len) )
         # split the list of combinations to go through to each CPUs
         for cmbs in [combos[i:i+self.NUM_CPUs] for i  in range(0, combos_len, self.NUM_CPUs)]:
             pool.apply_async(self._append_correlation, args=(shared_lst, cmbs, ))
