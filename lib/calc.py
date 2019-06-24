@@ -111,7 +111,7 @@ class calculate:
             idx = self.df.index.tolist()
             combos = list( itertools.combinations(idx, 2) )
         combos_len = len( combos )
-        logging.info("number of combinations "+str(combos_len) )
+        logging.info("number of combinations "+str(combos_len)+" from "+str(len(idx))+" items")
         # Shared list (Proxy manager)
         mgr = multiprocessing.Manager()
         shared_lst = mgr.list()
