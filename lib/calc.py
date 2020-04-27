@@ -1,16 +1,11 @@
 import os
+import sys
 import logging
 import pandas
 import itertools
 import re
-import glob
-
-import queue
-import threading
 import multiprocessing
 import signal
-
-import pprint
 
 __author__ = 'jmrodriguezc'
 
@@ -28,7 +23,15 @@ class calculate:
         self.infile = i
         # extract input data ( as dataframe )
         # set index with the first column
-        self.df = pandas.read_excel(self.infile, na_values=['NA'])        
+        fname, fextension = os.path.splitext(self.infile)
+        if fextension == ".xlsx" or fextension == ".xls":
+            self.df = pandas.read_excel(self.infile, na_values=['NA'])
+        elif fextension == ".csv":
+            self.df = pandas.read_csv(self.infile, sep=",", na_values=['NA'], encoding="ISO-8859-1")
+        elif fextension == ".tsv":
+            self.df = pandas.read_csv(self.infile, sep="\t", na_values=['NA'], encoding="ISO-8859-1")
+        else:
+            sys.exit("ERROR: extension of input file is not correct")
         c = str(self.df.columns[0])
         self.df = self.df.set_index(c)
         # transpose if apply

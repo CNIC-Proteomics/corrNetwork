@@ -52,6 +52,6 @@ if __name__ == "__main__":
                             format='%(asctime)s - %(levelname)s - %(message)s',
                             datefmt='%m/%d/%Y %I:%M:%S %p')
 
-    logging.info('start '+os.path.basename(__file__))
+    logging.info('start script: '+"{0}".format(" ".join([x for x in sys.argv])))
     main(args)
     logging.info('end '+os.path.basename(__file__))
