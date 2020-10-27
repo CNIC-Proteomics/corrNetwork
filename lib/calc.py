@@ -28,12 +28,14 @@ class calculate:
             self.df = pandas.read_excel(self.infile, na_values=['NA'])
         elif fextension == ".csv":
             self.df = pandas.read_csv(self.infile, sep=",", na_values=['NA'], encoding="ISO-8859-1")
-        elif fextension == ".tsv":
+        elif fextension == ".tsv" or fextension == ".txt":
             self.df = pandas.read_csv(self.infile, sep="\t", na_values=['NA'], encoding="ISO-8859-1")
         else:
             sys.exit("ERROR: extension of input file is not correct")
         c = str(self.df.columns[0])
         self.df = self.df.set_index(c)
+        # convert to float64
+        self.df.astype('float64').dtypes
         # transpose if apply
         if transpose:
             self.df = self.df.transpose()
@@ -130,6 +132,7 @@ class calculate:
         shared_lst = list(shared_lst)
         # create dataframe with the list of lists
         self.df_corr = pandas.DataFrame(shared_lst, columns=self.out_header)
+
 
     def to_csv(self, outfile):
         '''
