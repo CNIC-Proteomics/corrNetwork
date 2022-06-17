@@ -15,8 +15,8 @@ class calculate:
     '''
     Extract the correlation values
     '''
-    # NUM_CPUs = multiprocessing.cpu_count()
-    NUM_CPUs = 20
+    NUM_CPUs = int(multiprocessing.cpu_count()/1.25) # use the 75% of whole cpus
+    # NUM_CPUs = 20
 
     def __init__(self, i, m=None, uniq_geneId=False, transpose=False, groups=None):
         # handle I/O files
@@ -86,9 +86,13 @@ class calculate:
             corr = dfi.corr(dfj, method=self.method)
             # count hte number of cases when both series are empty
             # joining the df and deleting when all columns are empty
+            print(dfi)
+            print("*****")
+            print(dfj)
             n = pandas.concat([dfi, dfj], axis=1)
             n = n.dropna(how='all')
             nij = len( n.index )
+            print("------------------")
             # extract the identifiers by protein gene|protein
             gi = self._get_id(qi)
             gj = self._get_id(qj)
@@ -121,6 +125,7 @@ class calculate:
         mgr = multiprocessing.Manager()
         shared_lst = mgr.list()
         # create multiprocessing Pool
+        logging.info("calculate the correlation in parallel: "+str(self.NUM_CPUs))
         pool = multiprocessing.Pool(processes=self.NUM_CPUs)
         # split the list of combinations to go through to each CPUs
         for cmbs in [combos[i:i+self.NUM_CPUs] for i  in range(0, combos_len, self.NUM_CPUs)]:
