@@ -86,13 +86,9 @@ class calculate:
             corr = dfi.corr(dfj, method=self.method)
             # count hte number of cases when both series are empty
             # joining the df and deleting when all columns are empty
-            print(dfi)
-            print("*****")
-            print(dfj)
             n = pandas.concat([dfi, dfj], axis=1)
             n = n.dropna(how='all')
             nij = len( n.index )
-            print("------------------")
             # extract the identifiers by protein gene|protein
             gi = self._get_id(qi)
             gj = self._get_id(qj)
